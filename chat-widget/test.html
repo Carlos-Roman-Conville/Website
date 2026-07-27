@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Widget Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    .hero {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 80px 24px;
+      text-align: center;
+    }
+    h1 { font-size: 48px; margin-bottom: 16px; color: #fff; }
+    .highlight { color: #2563eb; }
+    p { font-size: 20px; color: #94a3b8; max-width: 600px; margin: 0 auto 24px; }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      max-width: 800px;
+      margin: 60px auto 0;
+      padding: 0 24px;
+    }
+    .card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      text-align: left;
+    }
+    .card h3 { color: #fff; margin-bottom: 8px; font-size: 18px; }
+    .card p { font-size: 14px; color: #94a3b8; text-align: left; }
+    .arrow { font-size: 14px; color: #94a3b8; text-align: center; margin-top: 60px; }
+  </style>
+</head>
+<body>
+  <div class="hero">
+    <h1>Carlos <span class="highlight">Roman-Conville</span></h1>
+    <p>Freelance developer specializing in automation, web scraping, and AI-powered tools.</p>
+    <p class="arrow">Click the chat bubble in the bottom right to try the AI assistant &darr;</p>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <h3>Web Scraping</h3>
+      <p>Data extraction from any website. Cleaned, formatted, delivered.</p>
+    </div>
+    <div class="card">
+      <h3>Automation</h3>
+      <p>Workflow automation, bots, scheduled tasks, platform integrations.</p>
+    </div>
+    <div class="card">
+      <h3>AI Tools</h3>
+      <p>Chatbots, AI-assisted data processing, RAG systems.</p>
+    </div>
+  </div>
+
+  <script>
+    window._cwManualInit = true;
+  </script>
+  <script src="chat-widget.js"></script>
+  <script>
+    CarlosChat.init({
+      webhookUrl: 'http://localhost:5678/webhook/chat'
+    });
+  </script>
+</body>
+</html>

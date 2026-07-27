@@ -1,0 +1,606 @@
+{
+  "name": "Portfolio AI Assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "name": "Chat Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "chat"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "set-message",
+              "name": "userMessage",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            },
+            {
+              "id": "set-session",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "set-timestamp",
+              "name": "timestamp",
+              "value": "={{ $json.body.timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "set-email",
+              "name": "visitorEmail",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "set-msg-count",
+              "name": "messageCount",
+              "value": "={{ $json.body.messageCount || 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Extract Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-email",
+              "leftValue": "={{ $json.visitorEmail }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Email Provided?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"Please provide your email address to start chatting.\",\n  \"leadScore\": null,\n  \"action\": \"collect_email\",\n  \"error\": \"email_required\"\n}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Reject - No Email",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-rate",
+              "leftValue": "={{ $json.messageCount }}",
+              "rightValue": 20,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ]
+        }
+      },
+      "name": "Rate Limit Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"You've sent a lot of messages! Feel free to email Carlos directly at rexochangobiz@gmail.com.\",\n  \"leadScore\": null,\n  \"action\": \"end_conversation\",\n  \"error\": \"rate_limited\"\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Reject - Rate Limited",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData(\"global\");\nif (!staticData.sessions) staticData.sessions = {};\n\nconst sessionId = $input.first().json.sessionId;\nconst userMessage = $input.first().json.userMessage;\nconst visitorEmail = $input.first().json.visitorEmail;\nconst rawHistory = staticData.sessions[sessionId] || {};\nconst history = rawHistory.turns || [];\n\nconst messages = [];\nfor (const turn of history.slice(-10)) {\n  messages.push({ role: \"user\", content: turn.user });\n  messages.push({ role: \"assistant\", content: turn.assistant });\n}\n\nmessages.push({\n  role: \"user\",\n  content: \"Visitor email: \" + visitorEmail + \". Message: \" + userMessage\n});\n\nconst systemPrompt = \"You are Carlos's virtual assistant on his portfolio website. Your name is Carlos's Assistant (you don't have a separate name — you represent Carlos directly).\\n\\n## Your Personality\\n\\nYou're friendly, confident, and straightforward. You talk like someone who knows their stuff but doesn't take themselves too seriously. Keep messages short — 2-3 sentences max unless someone asks for detail. Use first names. No corporate buzzwords. No emoji overload (one here and there is fine). You're helpful, not salesy.\\n\\n## Who Carlos Is\\n\\nCarlos Roman-Conville is a freelance developer specializing in automation, web scraping, and AI-powered tools. He's actively building his portfolio and client base. He's honest, responsive, and delivers quality work. He's a growing freelancer — don't oversell him as a senior engineer or agency, but do show confidence in what he can do.\\n\\n## Services You Can Discuss\\n\\n1. **Web Scraping & Data Extraction** — Building scrapers to pull data from websites, APIs, directories. Data cleaning, enrichment, and delivery as spreadsheets or databases. Examples: retail store locators, e-commerce product data, job market analysis.\\n\\n2. **Automation & Bots** — Workflow automation using tools like n8n, custom bots, scheduled tasks, integrations between platforms. If it's repetitive, Carlos can automate it.\\n\\n3. **AI-Powered Tools** — Integrating AI APIs (like Claude, GPT) into practical applications. Chatbots, content tools, AI-assisted data processing, RAG systems.\\n\\n4. **Utility Scripts & Data Tools** — Small but useful tools: file organizers, data processors, system utilities. Quick-turnaround projects that solve specific problems.\\n\\n5. **Finance & Analytics Tools** — Experimental but functional: stock analysis tools, market pattern detectors, data visualization dashboards.\\n\\n## Email Gate\\n\\nThe visitor has already provided their email address before reaching you — the website collects it upfront before the chat starts. Their email will be included in the conversation context. You do NOT need to ask for their email unless it wasn't provided for some reason. If you already have their email, skip the \\\"collect_email\\\" action entirely and focus on qualifying the conversation.\\n\\n## How to Handle Conversations\\n\\n### Step 1: Greet and identify intent\\nWhen someone messages you, greet them warmly and ask what brought them here. You already have their email, so don't ask for it again. Figure out if they're:\\n- **Hiring** — they have a project or need work done\\n- **Browsing** — checking out the portfolio, no specific need yet\\n- **Collaborating** — want to partner or work together on something\\n- **Asking a question** — about Carlos, a project, or a technical topic\\n\\n### Step 2: If they want to hire (qualifying)\\nAsk these questions naturally across the conversation — don't fire them all at once like a form:\\n- What's the project? What do they need built or done?\\n- What's their budget range? (It's ok if they don't know — ask what they had in mind)\\n- What's the timeline? When do they need it by?\\n- Any specific technical requirements or preferences?\\n\\n### Step 3: Score the lead (internally — don't tell the visitor their score)\\n- **Hot**: Clear project description, budget of $100 or more, timeline within the next few weeks\\n- **Warm**: Has a project idea but vague on budget or timeline, or budget is under $100 but project is interesting\\n- **Cold**: Just browsing, no specific project, or clearly not a fit\\n\\n### Step 4: Next steps based on score\\n- **Hot or Warm**: Offer to schedule a quick call. Say something like \\\"Want to set up a quick call with Carlos to go over the details? I can find a time that works.\\\" Collect their name, email, and preferred times/days.\\n- **Cold**: Be helpful and friendly. Answer their questions, share info about the portfolio, and invite them to come back when they have a project in mind. Don't push scheduling.\\n\\n### Step 5: Collect booking info (if they want to schedule)\\nWhen they agree to a call, collect:\\n- Their name (if you don't have it yet)\\n- A couple of times/days that work for them (you already have their email)\\n- Confirm: \\\"I'll pass this to Carlos and he'll confirm a time with you.\\\"\\n\\nIMPORTANT: Never say \\\"you're booked\\\" or \\\"the meeting is confirmed.\\\" Carlos reviews every request and approves manually. Always say something like \\\"I'll send this over to Carlos and he'll get back to you to confirm.\\\"\\n\\n## Pricing Guidance\\n\\nWhen someone asks about pricing or what things cost:\\n- Give rough ranges, not exact quotes\\n- Small scraping jobs: typically $50–150\\n- Medium automation/scraping projects: $150–500\\n- Larger or ongoing projects: $500+, depends on scope\\n- AI integrations: varies widely, starting around $200 for simple implementations\\n- Utility scripts: $50–200 depending on complexity\\n\\nIf they state their own budget, respond positively if it's reasonable. If it's very low for what they're asking, be honest: \\\"That might be tight for the scope you're describing — Carlos can talk through options on a call.\\\"\\n\\nNever lock in a price. Always frame it as \\\"Carlos will finalize pricing based on the full scope.\\\"\\n\\n## Rules\\n\\n- Keep messages short. 2-3 sentences unless they ask for more detail.\\n- Don't use bullet points or markdown formatting in your replies — write like a person texting, not a document.\\n- Never pretend to be Carlos himself. You're his assistant.\\n- Never auto-confirm meetings. Always say Carlos will review and confirm.\\n- If someone is rude, spammy, or clearly wasting time, politely wrap up: \\\"Doesn't seem like this is a fit right now. Feel free to come back if you have a project in mind.\\\"\\n- If someone asks something you don't know, say \\\"I'm not sure about that — I can have Carlos follow up if you leave your email.\\\"\\n- Don't make up capabilities Carlos doesn't have. Stick to the five service categories.\\n- If someone asks about past projects, you can reference that Carlos has built web scrapers for retail data, e-commerce data extraction, job market analysis tools, automation workflows, and various AI-powered utilities.\\n\\n## Your Output Format\\n\\nYou MUST respond in valid JSON with this exact structure. No text outside the JSON.\\n\\n{\\n  \\\"reply\\\": \\\"Your conversational message to the visitor\\\",\\n  \\\"intent\\\": \\\"hiring | browsing | collaboration | question\\\",\\n  \\\"leadScore\\\": \\\"hot | warm | cold | null\\\",\\n  \\\"action\\\": \\\"none | request_availability | collect_email | end_conversation\\\",\\n  \\\"leadData\\\": {\\n    \\\"name\\\": null,\\n    \\\"email\\\": null,\\n    \\\"project\\\": null,\\n    \\\"budget\\\": null,\\n    \\\"timeline\\\": null\\n  }\\n}\\n\\n- \\\"reply\\\" is what the visitor sees. Write it naturally — no JSON or formatting in the reply text itself.\\n- \\\"intent\\\" is your best guess at what they want. Update it as the conversation progresses.\\n- \\\"leadScore\\\" starts null and gets set once you have enough info to judge. Can change as you learn more.\\n- \\\"action\\\" tells the system what to do:\\n  - \\\"none\\\" — just continue the conversation\\n  - \\\"collect_email\\\" — you're asking for their email\\n  - \\\"request_availability\\\" — you're asking when they're free for a call\\n  - \\\"end_conversation\\\" — conversation is wrapping up naturally or the visitor is disengaging\\n- \\\"leadData\\\" gets filled in progressively as you learn things. Leave fields as null until you have real info. Don't guess or infer — only fill in what they explicitly told you.\\n\";\n\nconst requestBody = JSON.stringify({\n  model: \"claude-haiku-4-5-20251001\",\n  max_tokens: 1024,\n  system: systemPrompt,\n  messages: messages\n});\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    claudeRequestBody: requestBody\n  }\n}];",
+        "mode": "runOnceForAllItems"
+      },
+      "name": "Load History",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{ $env.ANTHROPIC_API_KEY }}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ $json.claudeRequestBody }}",
+        "options": {}
+      },
+      "name": "Claude API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "parse-reply",
+              "name": "reply",
+              "value": "={{ JSON.parse($json.content[0].text.replace(/```json\\n?|```/g, '').trim()).reply }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-score",
+              "name": "leadScore",
+              "value": "={{ JSON.parse($json.content[0].text.replace(/```json\\n?|```/g, '').trim()).leadScore }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-action",
+              "name": "action",
+              "value": "={{ JSON.parse($json.content[0].text.replace(/```json\\n?|```/g, '').trim()).action }}",
+              "type": "string"
+            },
+            {
+              "id": "parse-intent",
+              "name": "intent",
+              "value": "={{ JSON.parse($json.content[0].text.replace(/```json\\n?|```/g, '').trim()).intent }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Parse Claude Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData(\"global\");\nif (!staticData.sessions) staticData.sessions = {};\n\nconst sessionId = $(\"Extract Input\").first().json.sessionId;\nconst userMessage = $(\"Extract Input\").first().json.userMessage;\nconst visitorEmail = $(\"Extract Input\").first().json.visitorEmail;\nconst reply = $input.first().json.reply;\n\nif (!staticData.sessions[sessionId]) {\n  staticData.sessions[sessionId] = {\n    email: visitorEmail,\n    turns: []\n  };\n}\n\nstaticData.sessions[sessionId].turns.push({\n  user: userMessage,\n  assistant: reply,\n  ts: Date.now()\n});\n\nconst s = staticData.sessions[sessionId];\nif (s.turns.length > 20) {\n  s.turns = s.turns.slice(-20);\n}\n\nconst cutoff = Date.now() - 86400000;\nfor (const sid of Object.keys(staticData.sessions)) {\n  const sess = staticData.sessions[sid];\n  if (sess.turns && sess.turns.length && sess.turns[sess.turns.length - 1].ts < cutoff) {\n    delete staticData.sessions[sid];\n  }\n}\n\nreturn $input.all();",
+        "mode": "runOnceForAllItems"
+      },
+      "name": "Save Turn",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.leadScore }}",
+                    "rightValue": "hot",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Hot Lead"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.leadScore }}",
+                    "rightValue": "warm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Warm Lead"
+            },
+            {
+              "conditions": {
+                "combinator": "and",
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.action }}",
+                    "rightValue": "request_availability",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Booking Request"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "General / Cold"
+        }
+      },
+      "name": "Route by Score",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "cromanconville@gmail.com",
+        "toEmail": "cromanconville@gmail.com",
+        "subject": "=Portfolio Lead ({{ $json.leadScore }}) - {{ $(\"Extract Input\").first().json.visitorEmail }}",
+        "emailFormat": "html",
+        "html": "=<h2>New {{ $json.leadScore }} Lead</h2>\n<p><strong>Email:</strong> {{ $(\"Extract Input\").first().json.visitorEmail }}</p>\n<p><strong>Score:</strong> {{ $json.leadScore }}</p>\n<p><strong>Intent:</strong> {{ $json.intent }}</p>\n<p><strong>Their message:</strong> {{ $(\"Extract Input\").first().json.userMessage }}</p>\n<p><strong>Bot replied:</strong> {{ $json.reply }}</p>\n<p><strong>Action:</strong> {{ $json.action }}</p>\n<hr>\n<p><em>Session: {{ $(\"Extract Input\").first().json.sessionId }}</em></p>",
+        "options": {}
+      },
+      "name": "Email Carlos - Lead",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2000,
+        160
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "gmail-smtp-portfolio",
+          "name": "Gmail SMTP"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "fromEmail": "cromanconville@gmail.com",
+        "toEmail": "cromanconville@gmail.com",
+        "subject": "=Booking Request - {{ $(\"Extract Input\").first().json.visitorEmail }}",
+        "emailFormat": "html",
+        "html": "=<h2>Booking Request</h2>\n<p><strong>Email:</strong> {{ $(\"Extract Input\").first().json.visitorEmail }}</p>\n<p><strong>Score:</strong> {{ $json.leadScore }}</p>\n<p><strong>Their message:</strong> {{ $(\"Extract Input\").first().json.userMessage }}</p>\n<p><strong>Bot replied:</strong> {{ $json.reply }}</p>\n<hr>\n<p>The visitor wants to schedule a call. Follow up at their email above.</p>\n<p><em>Session: {{ $(\"Extract Input\").first().json.sessionId }}</em></p>",
+        "options": {}
+      },
+      "name": "Email Carlos - Booking",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2000,
+        540
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "gmail-smtp-portfolio",
+          "name": "Gmail SMTP"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.reply) }},\n  \"leadScore\": {{ JSON.stringify($json.leadScore) }},\n  \"action\": {{ JSON.stringify($json.action) }}\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Send Chat Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": {{ JSON.stringify($json.reply) }},\n  \"leadScore\": {{ JSON.stringify($json.leadScore) }},\n  \"action\": {{ JSON.stringify($json.action) }}\n}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "name": "Send Chat Response Qualified",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2220,
+        260
+      ]
+    }
+  ],
+  "connections": {
+    "Chat Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Input": {
+      "main": [
+        [
+          {
+            "node": "Email Provided?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Provided?": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Check",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject - No Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Check": {
+      "main": [
+        [
+          {
+            "node": "Load History",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject - Rate Limited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load History": {
+      "main": [
+        [
+          {
+            "node": "Claude API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude API": {
+      "main": [
+        [
+          {
+            "node": "Parse Claude Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Claude Response": {
+      "main": [
+        [
+          {
+            "node": "Save Turn",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Turn": {
+      "main": [
+        [
+          {
+            "node": "Route by Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Score": {
+      "main": [
+        [
+          {
+            "node": "Email Carlos - Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Chat Response Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Carlos - Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Chat Response Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Carlos - Booking",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Chat Response Qualified",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Chat Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "portBot2025v2"
+}
