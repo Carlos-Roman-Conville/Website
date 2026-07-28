@@ -938,6 +938,33 @@ a:hover { color: var(--accent-hover); }
 .contact-form .btn {
   align-self: flex-start;
 }
+.contact-form .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.form-field { flex: 1; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+.form-status {
+  font-size: 13px;
+  min-height: 1.4em;
+}
+.form-status-success { color: var(--accent); }
+.form-status-error { color: #ef4444; }
+.form-privacy {
+  font-size: 11px;
+  color: var(--neutral);
+  font-style: italic;
+}
 
 /* ===== Mobile ===== */
 @media (max-width: 768px) {
