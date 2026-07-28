@@ -27,7 +27,7 @@ fadeEls.forEach(function(el) { observer.observe(el); });
 
 // Init chat widget
 CarlosChat.init({
-  webhookUrl: 'http://localhost:5678/webhook/chat',
+  webhookUrl: 'https://chat.crc-solutions.org/webhook/chat',
   brandColor: '#a3e635',
   brandColorHover: '#bef264'
 });
