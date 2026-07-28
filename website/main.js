@@ -5,9 +5,16 @@ document.getElementById('nav-toggle').addEventListener('click', function() {
 });
 
 document.querySelectorAll('.nav-links a').forEach(function(link) {
-  link.addEventListener('click', function() {
+  link.addEventListener('click', function(e) {
     document.getElementById('nav-links').classList.remove('open');
     document.getElementById('nav-toggle').classList.remove('active');
+    var href = this.getAttribute('href');
+    if (href && href.startsWith('#') && href.length > 1) {
+      e.preventDefault();
+      var target = document.getElementById(href.substring(1));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+      history.pushState(null, '', href);
+    }
   });
 });
 

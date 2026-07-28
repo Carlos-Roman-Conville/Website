@@ -456,6 +456,9 @@
       }
       injectStyles();
       createWidget();
+    },
+    open: function() {
+      if (!state.open) togglePanel();
     }
   };
 
