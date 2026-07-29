@@ -19,11 +19,57 @@
     sessionId: null,
     messageCount: 0,
     messages: [],
-    sending: false
+    sending: false,
+    lastSentAt: 0
   };
+
+  var STORAGE_KEY = 'cw_chat_state';
 
   function generateSessionId() {
     return 'sess_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        email: state.email,
+        sessionId: state.sessionId,
+        messageCount: state.messageCount,
+        messages: state.messages,
+        savedAt: Date.now()
+      }));
+    } catch (e) {}
+  }
+
+  function loadState() {
+    try {
+      var data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (!data || !data.email) return false;
+      var age = Date.now() - (data.savedAt || 0);
+      if (age > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+      state.email = data.email;
+      state.sessionId = data.sessionId;
+      state.messageCount = data.messageCount || 0;
+      state.messages = data.messages || [];
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function restoreMessages() {
+    document.getElementById('cw-email-gate').style.display = 'none';
+    document.getElementById('cw-messages').style.display = 'flex';
+    document.getElementById('cw-input-area').style.display = 'flex';
+    var container = document.getElementById('cw-messages');
+    state.messages.forEach(function(m) {
+      var msg = document.createElement('div');
+      msg.className = 'cw-msg cw-msg-' + m.sender;
+      msg.textContent = m.text;
+      container.appendChild(msg);
+    });
+    container.scrollTop = container.scrollHeight;
   }
 
   function injectStyles() {
@@ -303,6 +349,7 @@
     `;
     document.body.appendChild(container);
     bindEvents();
+    if (loadState()) restoreMessages();
   }
 
   function bindEvents() {
@@ -352,6 +399,7 @@
 
     state.email = email;
     state.sessionId = generateSessionId();
+    saveState();
 
     document.getElementById('cw-email-gate').style.display = 'none';
     document.getElementById('cw-messages').style.display = 'flex';
@@ -368,6 +416,8 @@
     msg.textContent = text;
     container.appendChild(msg);
     container.scrollTop = container.scrollHeight;
+    state.messages.push({ text: text, sender: sender });
+    saveState();
     return msg;
   }
 
@@ -388,9 +438,12 @@
 
   async function sendMessage() {
     if (state.sending) return;
+    var now = Date.now();
+    if (now - state.lastSentAt < 2000) return;
     const input = document.getElementById('cw-input');
     const text = input.value.trim();
     if (!text) return;
+    state.lastSentAt = now;
 
     state.sending = true;
     state.messageCount++;
