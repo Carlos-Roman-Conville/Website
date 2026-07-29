@@ -19,7 +19,7 @@ document.querySelectorAll('.nav-links a').forEach(function(link) {
 });
 
 // Scroll fade-in
-var fadeEls = document.querySelectorAll('.service-outcome-card, .project-card, .about-text, .about-card, .section-tag, .section-title, .pillar-header, .section-intro, .process-step, .faq-item');
+var fadeEls = document.querySelectorAll('.service-outcome-card, .project-card, .about-text, .about-card, .section-tag, .section-title, .pillar-header, .section-intro, .faq-item');
 fadeEls.forEach(function(el) { el.classList.add('fade-up'); });
 
 var observer = new IntersectionObserver(function(entries) {
