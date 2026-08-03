@@ -19,8 +19,8 @@ document.querySelectorAll('.nav-links a').forEach(function(link) {
 });
 
 // Scroll fade-in
-var fadeEls = document.querySelectorAll('.service-outcome-card, .project-card, .about-text, .about-card, .section-tag, .section-title, .pillar-header, .section-intro, .faq-item');
-fadeEls.forEach(function(el) { el.classList.add('fade-up'); });
+var autoFadeEls = document.querySelectorAll('.service-outcome-card, .project-card, .about-text, .about-card, .section-tag, .section-title, .pillar-header, .section-intro, .faq-item');
+autoFadeEls.forEach(function(el) { el.classList.add('fade-up'); });
 
 var observer = new IntersectionObserver(function(entries) {
   entries.forEach(function(entry) {
@@ -30,7 +30,7 @@ var observer = new IntersectionObserver(function(entries) {
   });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
-fadeEls.forEach(function(el) { observer.observe(el); });
+document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el); });
 
 // Init chat widget
 CarlosChat.init({

@@ -2,9 +2,8 @@
 
 ## Priority Fixes
 
-- [ ] **1. og:image + Twitter card meta tags**
-  Social shares (LinkedIn, Slack, Twitter, iMessage) show no preview image.
-  Needs: og:image, twitter:card, twitter:title, twitter:description, twitter:image
+- [x] **1. og:image + Twitter card meta tags**
+  Added 1200x630 og-image.png, og:image, twitter:card (summary_large_image), twitter:image.
 
 - [x] **2. Chat persistence (localStorage)**
   Save/restore email, sessionId, messages via localStorage with 24hr expiry.
@@ -29,8 +28,8 @@
 
 ## Future / Waiting on User
 
-- [ ] Social media links (Twitter, LinkedIn) - waiting on user to provide
-- [ ] og:image asset - need preview image for social shares
+- [x] LinkedIn added to contact section, footer, and JSON-LD
+- [ ] Twitter/X link - waiting on user to set up profile
 - [ ] Featured project hierarchy (make AI assistant the flagship)
 - [ ] Project screenshots / visual evidence
 - [ ] Icon normalization (problem section icons)
