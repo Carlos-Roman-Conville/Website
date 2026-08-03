@@ -1351,3 +1351,128 @@ a:hover { color: var(--accent-hover); }
 @media (max-width: 768px) {
   .solutions-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== Approach block ===== */
+.approach-text {
+  max-width: 720px;
+}
+.approach-text p {
+  font-size: 17px;
+  color: var(--text-dim);
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+.approach-text p:last-child { margin-bottom: 0; }
+.approach-goal {
+  color: var(--text) !important;
+}
+.approach-goal strong {
+  color: var(--text-bright);
+  font-weight: 700;
+}
+
+/* ===== Working-System Guarantee ===== */
+.guarantee-box {
+  max-width: 780px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: clamp(28px, 4vw, 44px);
+  box-shadow: 0 0 40px rgba(167, 241, 43, 0.08);
+  text-align: center;
+}
+.guarantee-box .section-tag {
+  color: var(--accent);
+}
+.guarantee-title {
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 800;
+  color: var(--text-bright);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin-bottom: 20px;
+}
+.guarantee-box p {
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.guarantee-box p strong {
+  color: var(--text-bright);
+  font-weight: 700;
+}
+.guarantee-close {
+  padding-top: 18px;
+  margin-top: 6px;
+  margin-bottom: 0 !important;
+  border-top: 1px solid var(--border);
+  font-size: 15px !important;
+}
+
+/* ===== Founder photo ===== */
+.founder-photo {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--neutral-border);
+  min-height: 320px;
+}
+.founder-photo::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, var(--purple), var(--accent), transparent);
+}
+.founder-photo img.founder-real {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.founder-photo-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 48px 24px;
+  min-height: 317px;
+  text-align: center;
+}
+.founder-placeholder-icon {
+  width: 56px;
+  height: 56px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+  image-rendering: pixelated;
+}
+.founder-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-bright);
+}
+.founder-role {
+  font-size: 13px;
+  color: var(--neutral);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.about-founder-close {
+  color: var(--text) !important;
+  font-weight: 500;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+  margin-top: 4px;
+}
+
+/* ===== Services page header ===== */
+.page-header {
+  padding-top: calc(72px + clamp(3rem, 6vw, 5rem));
+}
+.page-header .btn { margin-top: 8px; }
+.nav-links a.nav-active {
+  color: var(--accent);
+}
