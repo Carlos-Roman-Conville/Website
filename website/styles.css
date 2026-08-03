@@ -1529,3 +1529,53 @@ a:hover { color: var(--accent-hover); }
   line-height: 1.7;
   font-style: italic;
 }
+
+/* ===== Founding-Client Pilot Program ===== */
+.pilot-box {
+  max-width: 780px;
+  margin: 0 auto;
+  background: var(--bg-card);
+  border: 1px solid var(--purple-border);
+  border-radius: var(--radius);
+  padding: clamp(28px, 4vw, 44px);
+  box-shadow: 0 0 40px var(--purple-glow);
+}
+.pilot-box .section-tag { color: var(--purple-light); }
+.pilot-title {
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 800;
+  color: var(--text-bright);
+  line-height: 1.3;
+  letter-spacing: -0.3px;
+  margin-bottom: 16px;
+}
+.pilot-box > p {
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1.75;
+  margin-bottom: 18px;
+}
+.pilot-terms {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 26px;
+  display: grid;
+  gap: 10px;
+}
+.pilot-terms li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.pilot-terms li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--purple-light);
+}
