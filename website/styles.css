@@ -1476,3 +1476,56 @@ a:hover { color: var(--accent-hover); }
 .nav-links a.nav-active {
   color: var(--accent);
 }
+
+/* ===== Guarantee link + mechanics steps ===== */
+.guarantee-link {
+  display: inline-block;
+  margin-top: 22px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.guarantee-link:hover { color: var(--accent-hover); text-decoration: underline; }
+
+.guarantee-steps {
+  max-width: 720px;
+  margin: 8px 0 20px;
+  padding: 0;
+  list-style: none;
+  counter-reset: gstep;
+}
+.guarantee-steps li {
+  position: relative;
+  padding: 0 0 20px 48px;
+  font-size: 16px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  counter-increment: gstep;
+}
+.guarantee-steps li:last-child { padding-bottom: 0; }
+.guarantee-steps li::before {
+  content: counter(gstep);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.guarantee-steps li strong { color: var(--text-bright); }
+.guarantee-steps-close {
+  max-width: 720px;
+  margin-top: 24px;
+  font-size: 15px;
+  color: var(--text-dim);
+  line-height: 1.7;
+  font-style: italic;
+}
