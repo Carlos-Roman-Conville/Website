@@ -1579,3 +1579,112 @@ a:hover { color: var(--accent-hover); }
   border-radius: 50%;
   background: var(--purple-light);
 }
+.pilot-box .pilot-note {
+  font-size: 13px;
+  color: var(--neutral);
+  font-style: italic;
+  margin-bottom: 24px;
+}
+
+/* ===== Category grid (3 on home, 5 on services) ===== */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .cat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .cat-grid { grid-template-columns: 1fr; }
+}
+
+/* ===== What CRC is / is not ===== */
+.isnot-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 700px) {
+  .isnot-grid { grid-template-columns: 1fr; }
+}
+.isnot-card {
+  background: var(--bg-card);
+  border: 1px solid var(--neutral-border);
+  border-radius: var(--radius);
+  padding: 28px;
+}
+.isnot-card.is-card { border-color: var(--accent); }
+.isnot-card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--text-bright);
+}
+.is-card h3 { color: var(--accent); }
+.isnot-card ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.isnot-card li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.is-card li::before {
+  content: '\2713';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+.isnot li::before {
+  content: '\2715';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--neutral);
+  font-weight: 700;
+}
+
+/* ===== Contact page ===== */
+.contact-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 40px;
+  align-items: start;
+  margin-top: 36px;
+}
+@media (max-width: 768px) {
+  .contact-layout { grid-template-columns: 1fr; gap: 28px; }
+}
+.contact-methods { display: grid; gap: 14px; align-content: start; }
+.contact-method {
+  display: block;
+  background: var(--bg-card);
+  border: 1px solid var(--neutral-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+a.contact-method:hover { border-color: var(--accent); }
+.contact-method-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--neutral);
+  margin-bottom: 4px;
+}
+.contact-method-value {
+  display: block;
+  font-size: 15px;
+  color: var(--text-bright);
+  font-weight: 600;
+}
+.contact-method-value a { color: var(--accent); }
+.contact-layout .contact-form-wrap {
+  max-width: none;
+  margin: 0;
+}
