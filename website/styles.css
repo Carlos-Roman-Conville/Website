@@ -1688,3 +1688,10 @@ a.contact-method:hover { border-color: var(--accent); }
   max-width: none;
   margin: 0;
 }
+
+/* ===== Brand logo in nav ===== */
+.nav-logo { display: inline-flex; align-items: center; }
+.nav-logo img { height: 34px; width: auto; display: block; }
+@media (max-width: 768px) {
+  .nav-logo img { height: 30px; }
+}
