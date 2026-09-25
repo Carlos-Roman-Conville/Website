@@ -17,7 +17,6 @@
     open: false,
     email: null,
     sessionId: null,
-    messageCount: 0,
     messages: [],
     sending: false,
     lastSentAt: 0
@@ -34,7 +33,6 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         email: state.email,
         sessionId: state.sessionId,
-        messageCount: state.messageCount,
         messages: state.messages,
         savedAt: Date.now()
       }));
@@ -52,7 +50,6 @@
       }
       state.email = data.email;
       state.sessionId = data.sessionId;
-      state.messageCount = data.messageCount || 0;
       state.messages = data.messages || [];
       return true;
     } catch (e) { return false; }
@@ -405,7 +402,35 @@
     document.getElementById('cw-messages').style.display = 'flex';
     document.getElementById('cw-input-area').style.display = 'flex';
 
-    addMessage(CONFIG.greeting, 'bot');
+    startChatSession();
+  }
+
+  async function startChatSession() {
+    state.sending = true;
+    showTyping();
+    try {
+      var res = await fetch(CONFIG.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: '',
+          sessionId: state.sessionId,
+          email: state.email,
+          timestamp: new Date().toISOString()
+        })
+      });
+      hideTyping();
+      var data = await res.json().catch(function() { return null; });
+      if (data && data.reply) {
+        addMessage(data.reply, 'bot');
+      } else {
+        addMessage(CONFIG.greeting, 'bot');
+      }
+    } catch (err) {
+      hideTyping();
+      addMessage(CONFIG.greeting, 'bot');
+    }
+    state.sending = false;
     document.getElementById('cw-input').focus();
   }
 
@@ -446,7 +471,6 @@
     state.lastSentAt = now;
 
     state.sending = true;
-    state.messageCount++;
     input.value = '';
     document.getElementById('cw-send').disabled = true;
 
@@ -461,7 +485,6 @@
           message: text,
           sessionId: state.sessionId,
           email: state.email,
-          messageCount: state.messageCount,
           timestamp: new Date().toISOString()
         })
       });
@@ -472,6 +495,8 @@
         const errData = await res.json().catch(() => null);
         if (errData && errData.reply) {
           addMessage(errData.reply, 'bot');
+        } else if (res.status === 429) {
+          addMessage("You're sending messages too quickly. Please wait a bit.", 'bot');
         } else {
           addMessage("Sorry, something went wrong. Try again in a moment.", 'bot');
         }

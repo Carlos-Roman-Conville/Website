@@ -1,32 +1,34 @@
 # CRC Solutions Website
 
-Marketing site for [crc-solutions.org](https://crc-solutions.org) with an embedded AI assistant that qualifies visitors, answers service questions, and routes strong leads to booking.
-
-The site isn't a brochure. The assistant is the lead-generation system, and it runs in production.
+Marketing site for [crc-solutions.org](https://crc-solutions.org) with an embedded AI assistant powered by the **Receptionist** backend (shared brain with phone).
 
 ## What's here
 
 | Directory | Contents |
 |---|---|
-| `website/` | The site itself: pages, styles, assets |
-| `chat-widget/` | Embedded AI assistant, front end and API glue |
-| `n8n-workflow/` | Automation workflows behind intake, routing, and notifications |
+| `website/` | Static site: pages, styles, chat widget, `site-config.js` |
+| `chat-widget/` | Copy of widget for local test page |
+| `n8n-workflow/` | **Legacy reference only** — do not use in production |
 
-## The assistant
+## Backend wiring (Phase 5)
 
-A visitor asks a question. The assistant answers from the service catalog, asks qualifying questions back, scores intent, and, when a lead is strong, captures contact details and routes to calendar booking with a notification out.
+`website/site-config.js` sets the API base:
 
-Controls that matter once it's live:
+```javascript
+window.CRC_RECEPTIONIST_API = 'https://chat.crc-solutions.org';
+```
 
-- **Rate limiting** so one visitor can't run up API cost
-- **Spending caps** as a hard ceiling
-- **Email gating** before the conversation goes deep
-- **Human approval** before anything reaches the calendar
+| Frontend | Endpoint |
+|----------|----------|
+| Chat widget | `POST /chat` |
+| Contact form | `POST /contact` |
+
+Deploy the Receptionist stack first (`E:\AI Programs\Receptionist\deploy\README.md`), then publish this static site.
+
+## Local widget test
+
+Point `site-config.js` at `http://localhost:3000` and run `npm run chat:dev` in the Receptionist repo.
 
 ## Stack
 
-JavaScript · Claude API · n8n · Airtable · Gmail · Google Calendar
-
-## Notes
-
-Built and maintained by CRC Solutions. The intake pattern deployed here is the same one installed for clients. The site is the working demo.
+Static HTML/CSS/JS · Receptionist chat service · Claude · Postgres · Pushover · SMTP briefing
