@@ -7,8 +7,7 @@ Marketing site for [crc-solutions.org](https://crc-solutions.org) with an embedd
 | Directory | Contents |
 |---|---|
 | `website/` | Static site: pages, styles, chat widget, `site-config.js` |
-| `chat-widget/` | Copy of widget for local test page |
-| `n8n-workflow/` | **Legacy reference only** — do not use in production |
+| `website/_headers` | Cloudflare Pages response headers: HSTS, CSP, frame-ancestors |
 
 ## Backend wiring (Phase 5)
 
