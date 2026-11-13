@@ -1,6 +1,7 @@
 # Cloudflare Pages response headers. Values follow the OWASP Secure Headers Project (headers_add.json)
 # and Mozilla's Web Security Guidelines, adjusted for a static site that loads Google Fonts and talks to
-# chat.crc-solutions.org, plus the Cloudflare Web Analytics beacon the Pages project injects. Not applied: Cross-Origin-Embedder-Policy require-corp (breaks Google Fonts),
+# chat.crc-solutions.org, plus the Cloudflare Web Analytics beacon the Pages project injects, plus Cloudflare
+# Turnstile (script and frame from challenges.cloudflare.com) for the chat's bot check. Not applied: Cross-Origin-Embedder-Policy require-corp (breaks Google Fonts),
 # Cache-Control no-store (static assets should cache), HSTS preload (needs a formal submission first).
 /*
   Strict-Transport-Security: max-age=63072000; includeSubDomains
@@ -12,7 +13,7 @@
   X-Permitted-Cross-Domain-Policies: none
   X-DNS-Prefetch-Control: off
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=(), interest-cohort=()
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://chat.crc-solutions.org https://cloudflareinsights.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://chat.crc-solutions.org https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests
 
 # security.txt (RFC 9116) must be served as plain text
 /.well-known/security.txt
