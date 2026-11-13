@@ -34,27 +34,15 @@ document.querySelectorAll('.fade-up').forEach(function(el) { observer.observe(el
 
 var RECEPTIONIST_API = (window.CRC_RECEPTIONIST_API || 'https://chat.crc-solutions.org').replace(/\/$/, '');
 
-// Chat widget, health-gated (GO-LIVE GL-1): the bubble only appears when the chat service answers /health
-// with web chat enabled. If the backend is down, visitors see no chat at all and use email or the form instead,
-// rather than a chat that swallows their messages.
-function receptionistHealthy() {
-  var ctrl = typeof AbortController === 'function' ? new AbortController() : null;
-  var timer = setTimeout(function() { if (ctrl) ctrl.abort(); }, 4000);
-  return fetch(RECEPTIONIST_API + '/health', { method: 'GET', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
-    .then(function(res) { return res.ok ? res.json() : null; })
-    .then(function(body) { return !!(body && body.ok === true && body.webChatEnabled === true); })
-    .catch(function() { return false; })
-    .finally(function() { clearTimeout(timer); });
-}
-
-receptionistHealthy().then(function(up) {
-  if (!up || !window.CarlosChat) return;
-  CarlosChat.init({
-    webhookUrl: RECEPTIONIST_API + '/chat',
-    brandColor: '#a3e635',
-    brandColorHover: '#bef264'
+// Chat widget. It is health-gated itself (GO-LIVE GL-1): no launcher unless the chat service
+// answers /chat/config with chat enabled, so a backend outage never leaves a dead chat on the page.
+if (window.CrcChat) {
+  CrcChat.start({
+    api: RECEPTIONIST_API,
+    privacyUrl: 'privacy.html',
+    fallbackEmail: 'carlos@crc-solutions.org'
   });
-});
+}
 
 // Build a mailto: link holding the visitor's message, so a failed form send is never lost.
 function contactMailto(name, message) {
