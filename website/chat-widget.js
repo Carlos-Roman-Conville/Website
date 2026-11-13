@@ -296,16 +296,32 @@
     scrollToEnd();
   }
 
+  /** Open times as buttons, grouped by day ("Tuesday, November 17" then "7:00 AM", "7:30 AM"). */
   function slotButtons(slots) {
     if (!slots || !slots.length) return;
-    var wrap = h('div', { className: 'crcw-slots', role: 'group', 'aria-label': 'Open times' });
+    var box = h('div', { className: 'crcw-slot-box' });
+    var groups = [];
     slots.slice(0, 6).forEach(function (s) {
-      wrap.appendChild(h('button', {
-        type: 'button', className: 'crcw-slot', text: s.label,
-        onclick: function () { wrap.remove(); send('I’d like ' + s.label + '.'); }
-      }));
+      var at = s.label.lastIndexOf(' at ');
+      var day = at > 0 ? s.label.slice(0, at) : '';
+      var time = at > 0 ? s.label.slice(at + 4) : s.label;
+      var g = groups.length && groups[groups.length - 1].day === day ? groups[groups.length - 1] : null;
+      if (!g) { g = { day: day, items: [] }; groups.push(g); }
+      g.items.push({ slot: s, time: time });
     });
-    el.log.appendChild(wrap);
+    groups.forEach(function (g, gi) {
+      var headId = 'crcw-day-' + Date.now() + '-' + gi;
+      if (g.day) box.appendChild(h('p', { id: headId, className: 'crcw-slot-day', text: g.day }));
+      var wrap = h('div', { className: 'crcw-slots', role: 'group', 'aria-label': g.day ? 'Open times on ' + g.day : 'Open times' });
+      g.items.forEach(function (it) {
+        wrap.appendChild(h('button', {
+          type: 'button', className: 'crcw-slot', text: it.time, 'aria-label': it.slot.label,
+          onclick: function () { box.remove(); send('I’d like ' + it.slot.label + '.'); }
+        }));
+      });
+      box.appendChild(wrap);
+    });
+    el.log.appendChild(box);
     scrollToEnd();
   }
 
@@ -464,6 +480,9 @@
       if (slots && booked === null) slotButtons(slots);
       if (meta && meta.action === 'end_conversation') {
         chips([], false);
+      } else if (slots && booked === null) {
+        // The time buttons are the choices; suggestion chips would only repeat them.
+        chips([], !!(meta && meta.action === 'offer_handoff'));
       } else {
         chips(meta ? meta.suggestions : [], !!(meta && meta.action === 'offer_handoff'));
       }
