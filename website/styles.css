@@ -1716,3 +1716,14 @@ a.contact-method:hover { border-color: var(--accent); }
   margin: 0;
 }
 .scope-note strong { color: var(--text-bright); }
+
+
+/* ===== Legal pages (privacy) ===== */
+.legal { max-width: 760px; }
+.legal h2 { font-size: 22px; margin: 36px 0 12px; color: var(--text-bright); }
+.legal p, .legal li { color: var(--text); font-size: 16px; }
+.legal p { margin-bottom: 14px; }
+.legal ul { margin: 0 0 14px 22px; }
+.legal li { margin-bottom: 8px; }
+.legal a { text-decoration: underline; }
+.legal-updated { color: var(--text-dim); font-size: 14px; }
