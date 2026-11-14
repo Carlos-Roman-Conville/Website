@@ -8,6 +8,8 @@ Marketing site for [crc-solutions.org](https://crc-solutions.org) with an embedd
 |---|---|
 | `website/` | Static site: pages, styles, chat widget, `site-config.js` |
 | `website/_headers` | Cloudflare Pages response headers: HSTS, CSP, frame-ancestors |
+| `functions/` | Pages Functions: `_middleware.js` (www redirect), `unsubscribe.js` + `api/opt-outs.js` (email opt-outs, see [deploy/UNSUBSCRIBE.md](deploy/UNSUBSCRIBE.md)) |
+| `lib/`, `tests/` | Code shared by the functions; `node --test tests/unsubscribe.test.mjs` |
 
 ## Backend wiring (Phase 5)
 
