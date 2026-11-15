@@ -57,6 +57,50 @@ function contactMailto(name, message) {
   var btn = document.getElementById('cf-submit');
   var status = document.getElementById('cf-status');
 
+  // Bot check (GL-18): the same Turnstile site key the chat uses, from the chat service's /chat/config.
+  var verifyBox = document.getElementById('cf-verify');
+  var siteKeyReady = null;
+  var widgetId = null;
+  function contactSiteKey() {
+    if (!siteKeyReady) {
+      siteKeyReady = fetch(RECEPTIONIST_API + '/chat/config')
+        .then(function(res) { return res.ok ? res.json() : {}; })
+        .then(function(cfg) { return (cfg && cfg.turnstileSiteKey) || null; })
+        .catch(function() { siteKeyReady = null; return null; });
+    }
+    return siteKeyReady;
+  }
+  function loadTurnstile() {
+    return new Promise(function(resolve, reject) {
+      if (window.turnstile) return resolve(window.turnstile);
+      var s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.onload = function() { resolve(window.turnstile); };
+      s.onerror = function() { reject(new Error('turnstile_load_failed')); };
+      document.head.appendChild(s);
+    });
+  }
+  // A Turnstile token works once, so every send renders a fresh widget. No site key = no token;
+  // the server then decides (production refuses, and the catch below offers email instead).
+  function contactToken() {
+    return contactSiteKey().then(function(siteKey) {
+      if (!siteKey) return null;
+      return loadTurnstile().then(function(ts) {
+        return new Promise(function(resolve, reject) {
+          if (widgetId !== null) ts.remove(widgetId);
+          widgetId = ts.render(verifyBox, {
+            sitekey: siteKey,
+            appearance: 'interaction-only',
+            action: 'contact_form',
+            callback: resolve,
+            'error-callback': function() { reject(new Error('turnstile_failed')); }
+          });
+        });
+      });
+    });
+  }
+
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     if (form.querySelector('[name="website"]').value) return;
@@ -81,15 +125,18 @@ function contactMailto(name, message) {
     status.textContent = '';
     status.className = 'form-status';
 
-    fetch(RECEPTIONIST_API + '/contact', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: name,
-        email: email,
-        message: message,
-        timestamp: new Date().toISOString()
-      })
+    contactToken().then(function(token) {
+      return fetch(RECEPTIONIST_API + '/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          message: message,
+          turnstileToken: token,
+          timestamp: new Date().toISOString()
+        })
+      });
     })
     .then(function(res) {
       if (!res.ok) throw new Error('Server error');
