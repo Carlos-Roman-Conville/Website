@@ -14,8 +14,9 @@ const fx = JSON.parse(readFileSync(new URL("./fixtures/unsub-tokens.json", impor
 const PULL_KEY = "test-pull-key-not-real";
 
 class FakeKV {
-  constructor() { this.m = new Map(); this.fail = false; }
-  async put(k, v, opts = {}) { if (this.fail) throw new Error("kv down"); this.m.set(k, { v, metadata: opts.metadata }); }
+  constructor() { this.m = new Map(); this.fail = false; this.getFail = false; this.puts = 0; }
+  async get(k) { if (this.fail || this.getFail) throw new Error("kv down"); return this.m.has(k) ? this.m.get(k).v : null; }
+  async put(k, v, opts = {}) { if (this.fail) throw new Error("kv down"); this.puts++; this.m.set(k, { v, metadata: opts.metadata }); }
   async delete(k) { this.m.delete(k); }
   async list({ prefix = "", limit = 1000 } = {}) {
     const all = [...this.m.keys()].filter((k) => k.startsWith(prefix)).sort();
@@ -110,6 +111,45 @@ test("missing secret, missing KV or KV down is a 503, never a false success", as
   assert.equal((await unsub.onRequestPost({ request: oneClick(t), env: { ...env(), OPT_OUTS: undefined } })).status, 503);
   const kv = new FakeKV(); kv.fail = true;
   assert.equal((await unsub.onRequestPost({ request: oneClick(t), env: env(kv) })).status, 503);
+});
+
+// GL-38: free KV allows 1,000 writes a day, so a replayed link must not write each time.
+const pageButton = (t) => new Request("https://crc-solutions.org/unsubscribe", {
+  method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ t }).toString(),
+});
+
+test("GL-38: replaying a link (one-click or page button) writes KV once and shows the same page each time", async () => {
+  for (const make of [oneClick, pageButton]) {
+    const e = env();
+    const t = fx.good[0].token;
+    const first = await (await unsub.onRequestPost({ request: make(t), env: e })).text();
+    for (let i = 0; i < 50; i++) {
+      const r = await unsub.onRequestPost({ request: make(t), env: e });
+      assert.equal(r.status, 200);
+      assert.equal(await r.text(), first);
+    }
+    assert.equal(e.OPT_OUTS.puts, 1);
+  }
+});
+
+test("GL-38: an opt-out that arrives again after the PC acknowledged the first is recorded again", async () => {
+  const e = env();
+  const t = fx.good[0].token;
+  await unsub.onRequestPost({ request: oneClick(t), env: e });
+  const id = (await (await api.onRequestGet({ request: pull(), env: e })).json()).data.opt_outs[0].id;
+  await api.onRequestPost({ request: pull({ method: "POST", body: JSON.stringify({ ack: [id] }) }), env: e });
+  assert.equal(e.OPT_OUTS.m.size, 0);
+  assert.equal((await unsub.onRequestPost({ request: pageButton(t), env: e })).status, 200);
+  const listed = (await (await api.onRequestGet({ request: pull(), env: e })).json()).data.opt_outs;
+  assert.deepEqual(listed.map((o) => [o.email, o.via]), [[fx.good[0].email, "page"]]);
+  assert.equal(e.OPT_OUTS.puts, 2);
+});
+
+test("GL-38: if the existence check fails, the opt-out is still written", async () => {
+  const e = env();
+  e.OPT_OUTS.getFail = true;
+  assert.equal((await unsub.onRequestPost({ request: oneClick(fx.good[1].token), env: e })).status, 200);
+  assert.ok(e.OPT_OUTS.m.has(KEY_PREFIX + fx.good[1].email));
 });
 
 test("pull needs the bearer key; 503 when not configured", async () => {
