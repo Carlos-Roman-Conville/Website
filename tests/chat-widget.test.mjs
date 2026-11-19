@@ -126,6 +126,50 @@ test("a booking followed by a failed reply shows the booking and offers no Try a
   assert.ok(w.buttons().includes("Leave your details"));
 });
 
+/** An SSE response whose connection drops after these events (a proxy or mobile network cut). */
+const sseThenDrop = (events) => {
+  const text = events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join("");
+  const body = new ReadableStream({
+    start(c) { c.enqueue(new TextEncoder().encode(text)); setTimeout(() => c.error(new TypeError("network error")), 5); },
+  });
+  return new Response(body, { status: 200, headers: { "content-type": "text/event-stream; charset=utf-8" } });
+};
+
+test("the stream drops after a booking: the booking is shown and Try again is not offered (review N3)", async () => {
+  const w = await widget({
+    session: goodSession,
+    stream: () => sseThenDrop([
+      ["status", { type: "status", tool: "book_appointment", text: "Booking that time…" }],
+      ["booked", { type: "booked", label: "Tuesday, August 11 at 10:00 AM" }],
+    ]),
+  });
+  await w.type("Book Tuesday at 10");
+  const card = w.log().querySelector(".crcw-booked");
+  assert.ok(card, "the booking is shown");
+  assert.match(card.textContent, /Tuesday, August 11 at 10:00 AM/);
+  assert.ok(w.log().querySelector(".crcw-error"), "the dropped connection is reported");
+  assert.ok(!w.buttons().includes("Try again"));
+});
+
+test("the stream drops while a tool that changes something runs: no Try again (review N3)", async () => {
+  const w = await widget({
+    session: goodSession,
+    stream: () => sseThenDrop([["status", { type: "status", tool: "capture_lead", text: "Saving your details…" }]]),
+  });
+  await w.type("Here are my details");
+  assert.ok(w.log().querySelector(".crcw-error"));
+  assert.ok(!w.buttons().includes("Try again"));
+});
+
+test("the stream drops after only a calendar check: Try again is still offered", async () => {
+  const w = await widget({
+    session: goodSession,
+    stream: () => sseThenDrop([["status", { type: "status", tool: "check_availability", text: "Checking the calendar…" }]]),
+  });
+  await w.type("Any time Tuesday?");
+  assert.ok(w.buttons().includes("Try again"));
+});
+
 test("an error the server marks retryable still offers Try again", async () => {
   const w = await widget({
     session: goodSession,

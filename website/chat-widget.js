@@ -16,6 +16,8 @@
   'use strict';
 
   var STORE_KEY = 'crc_chat_v2';
+  // Tools that only read (the chat server's SAFE_TO_REPEAT): a dropped turn that ran only these can be retried.
+  var SAFE_TO_REPEAT = ['check_availability', 'quote_price', 'classify_caller', 'log_interaction'];
   var MAX_STORED = 60;
 
   var opts = { api: '', privacyUrl: 'privacy.html', fallbackEmail: '' };
@@ -435,6 +437,7 @@
     var booked = null;
     var failed = null;
     var retryable = true;
+    var changedSomething = false; // a tool that books or saves started: sending again would repeat it
 
     function onEvent(event, data) {
       if (event === 'delta') {
@@ -447,6 +450,7 @@
         setText(reply.body, replyText);
         scrollToEnd();
       } else if (event === 'status') {
+        if (SAFE_TO_REPEAT.indexOf(data.tool) === -1) changedSomething = true;
         var s = waiting.querySelector('.crcw-status');
         if (s) s.textContent = data.text;
         if (reply) { // a tool runs after some text: show progress below it
@@ -504,9 +508,11 @@
       }
     }).catch(function (err) {
       if (waiting.parentNode) waiting.remove();
+      // The connection can drop after a booking: show it, and never offer to send it again.
+      if (booked !== null) bookedCard(booked);
       var msg = (err && err.userMessage) || 'Sorry, the assistant is not reachable right now.';
-      if (err && err.status === 429) errorRow(msg, null);
-      else errorRow(msg, text);
+      var noRetry = (err && err.status === 429) || booked !== null || changedSomething;
+      errorRow(msg, noRetry ? null : text);
       announce(msg);
     }).then(function () {
       setBusy(false);
