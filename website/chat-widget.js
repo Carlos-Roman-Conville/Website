@@ -16,6 +16,8 @@
   'use strict';
 
   var STORE_KEY = 'crc_chat_v2';
+  // Tools that only read (the chat server's SAFE_TO_REPEAT): a dropped turn that ran only these can be retried.
+  var SAFE_TO_REPEAT = ['check_availability', 'quote_price', 'classify_caller', 'log_interaction'];
   var MAX_STORED = 60;
 
   var opts = { api: '', privacyUrl: 'privacy.html', fallbackEmail: '' };
@@ -183,18 +185,31 @@
     });
   }
 
+  var sessionPending = null; // one session request at a time (opening the panel and sending both ask)
+
   function ensureSession() {
     if (state.token && state.expiresAt > Date.now() + 60000) return Promise.resolve(state.token);
-    return turnstileToken().then(function (tsToken) {
+    if (sessionPending) return sessionPending;
+    sessionPending = turnstileToken().then(function (tsToken) {
       return postJson('/chat/session', { turnstileToken: tsToken, page: location.pathname });
     }).then(function (data) {
-      if (!data.token) throw new Error(data.error || 'session_failed');
+      if (!data.token) {
+        // Keep the server's own words and status (rate limit, verification) for the visitor.
+        var err = new Error(data.message || data.error || 'session_failed');
+        err.status = data._status;
+        err.userMessage = data.message;
+        throw err;
+      }
       state.token = data.token;
       state.expiresAt = data.expiresAt;
       save();
       return state.token;
     });
+    sessionPending.then(clearPending, clearPending);
+    return sessionPending;
   }
+
+  function clearPending() { sessionPending = null; }
 
   /** POST /chat/stream and dispatch server-sent events to `on`. */
   function streamReply(message, on) {
@@ -421,6 +436,8 @@
     var slots = null;
     var booked = null;
     var failed = null;
+    var retryable = true;
+    var changedSomething = false; // a tool that books or saves started: sending again would repeat it
 
     function onEvent(event, data) {
       if (event === 'delta') {
@@ -433,6 +450,7 @@
         setText(reply.body, replyText);
         scrollToEnd();
       } else if (event === 'status') {
+        if (SAFE_TO_REPEAT.indexOf(data.tool) === -1) changedSomething = true;
         var s = waiting.querySelector('.crcw-status');
         if (s) s.textContent = data.text;
         if (reply) { // a tool runs after some text: show progress below it
@@ -448,6 +466,7 @@
         meta = data;
       } else if (event === 'error') {
         failed = data.message;
+        retryable = data.retryable !== false;
       }
     }
 
@@ -472,11 +491,12 @@
         announce('Assistant: ' + replyText);
         feedbackButtons(reply.row);
       }
+      // A booking made before the reply failed is real: show it, and never offer to send it again (GL-25).
+      if (booked !== null) bookedCard(booked);
       if (failed) {
-        errorRow(failed, text);
+        errorRow(failed, retryable && booked === null ? text : null);
         return;
       }
-      if (booked !== null) bookedCard(booked);
       if (slots && booked === null) slotButtons(slots);
       if (meta && meta.action === 'end_conversation') {
         chips([], false);
@@ -488,9 +508,11 @@
       }
     }).catch(function (err) {
       if (waiting.parentNode) waiting.remove();
+      // The connection can drop after a booking: show it, and never offer to send it again.
+      if (booked !== null) bookedCard(booked);
       var msg = (err && err.userMessage) || 'Sorry, the assistant is not reachable right now.';
-      if (err && err.status === 429) errorRow(msg, null);
-      else errorRow(msg, text);
+      var noRetry = (err && err.status === 429) || booked !== null || changedSomething;
+      errorRow(msg, noRetry ? null : text);
       announce(msg);
     }).then(function () {
       setBusy(false);
